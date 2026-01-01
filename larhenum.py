@@ -28,7 +28,7 @@ $$$$$$$$\\$$$$$$$ |  $$ |  $$ |$$ |  $$ |\$$$$$$$\ $$ |  $$ |
 {Style.RESET_ALL}
 {Fore.YELLOW}
 ╔══════════════════════════════════════════╗
-║         Advanced Reconnaissance Tool        ║
+║         Advanced Reconnaissance Tool     ║
 ╚══════════════════════════════════════════╝
 {Style.RESET_ALL}
 """
@@ -118,17 +118,17 @@ def run_tool(command, tool_name, output_file=None):
 def get_domain_input():
     input_box = f"""
 {Fore.CYAN}
-╔══════════════════════════════════════════════╗
-║                                              ║
-║  {Fore.WHITE}TARGET WILDCARD (e.g., target.com){Fore.CYAN}           ║
-║                                              ║
-╚══════════════════════════════════════════════╝
+╔════════════════════════════════════════════════════════════╗
+║                                                            ║
+║  {Fore.WHITE}TARGET WILDCARD (e.g., target.com){Fore.CYAN} ║
+║                                                            ║
+╚════════════════════════════════════════════════════════════╝
 {Style.RESET_ALL}
 """
     print(input_box)
 
     while True:
-        domain = input(f"{Fore.GREEN}[?]{Style.RESET_ALL} Domain: ").strip()
+        Domain = input(f"{Fore.GREEN}[?]{Style.RESET_ALL} Domain: ").strip()
 
         if not domain:
             print(f"{Fore.RED}[!] No domain entered!{Style.RESET_ALL}")
@@ -195,8 +195,8 @@ def main():
 {Fore.RED}
 ╔══════════════════════════════════════════════╗
 ║                                              ║
-║          R E C O N   S T A R T E D          ║
-║           Target: {domain:^20}          ║
+║          R E C O N   S T A R T E D           ║
+║           Target: {domain:^20}               ║
 ║                                              ║
 ╚══════════════════════════════════════════════╝
 {Style.RESET_ALL}
@@ -263,13 +263,13 @@ def main():
         if os.path.exists(filename):
             os.remove(filename)
 
-    print(f"\n{Fore.GREEN}╔══════════════════════════════════════════════╗")
-    print(f"║                                              ║")
-    print(f"║      R E C O N   C O M P L E T E D !        ║")
-    print(f"║                                              ║")
-    print(f"║    Total Subdomains Found: {Fore.YELLOW}{total_domains:^6}{Fore.GREEN}        ║")
-    print(f"║                                              ║")
-    print(f"╚══════════════════════════════════════════════╝{Style.RESET_ALL}")
+    print(f"\n{Fore.GREEN}╔══════════════════════════════════════════════════════════════╗")
+    print(f"║                                                                            ║")
+    print(f"║      R E C O N   C O M P L E T E D !                                       ║")
+    print(f"║                                                                            ║")
+    print(f"║    Total Subdomains Found: {Fore.YELLOW}{total_domains:^6}{Fore.GREEN}     ║")
+    print(f"║                                                                            ║")
+    print(f"╚════════════════════════════════════════════════════════════════════════════╝{Style.RESET_ALL}")
 
     if results:
         print(f"\n{Fore.CYAN}[*] Tool Statistics:{Style.RESET_ALL}")
@@ -320,11 +320,11 @@ def main():
 def print_footer():
     footer = f"""
 {Fore.CYAN}
-╔══════════════════════════════════════════════╗
-║                                              ║
-║  {Fore.WHITE}Created by: La'Rhen - Advanced Recon Tool{Fore.CYAN}   ║
-║                                              ║
-╚══════════════════════════════════════════════╝
+╔══════════════════════════════════════════════════════════════════════╗
+║                                                                      ║
+║  {Fore.WHITE}Created by: La'Rhen - Advanced Recon Tool{Fore.CYAN}    ║
+║                                                                      ║
+╚══════════════════════════════════════════════════════════════════════╝
 {Style.RESET_ALL}
 """
     print(footer)
