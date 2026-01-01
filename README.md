@@ -37,21 +37,31 @@ An automated reconnaissance tool for bug bounty hunters and penetration testers 
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/advanced-recon-tool.git
-cd advanced-recon-tool
-
-# Make install script executable
-chmod +x install.sh
+git clone https://github.com/fuysaal/larhenum.git && cd larhenum && chmod +x install.sh && chmod +x larhenum.py && pip3 install -r requirements.txt
 
 # Run the installer
 ./install.sh
+
+# Finish
+python3 larhenum.py
+```
+If don't start install.sh
+```bash
+cd larhenum
+python3 -m venv venv
+source venv/bin/activate
+pip3 install -r requirements.txt
+./install.sh
+
+# Finish
+python3 larhenum.py
 ```
 
 ### Method 2: Manual Installation
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/advanced-recon-tool.git
-cd advanced-recon-tool
+git clone https://github.com/fuysaal/larhenum.git
+cd larhenum
 
 # Install Python dependencies
 pip3 install -r requirements.txt
@@ -67,23 +77,23 @@ go install github.com/projectdiscovery/httpx/cmd/httpx@latest
 export PATH=$PATH:$(go env GOPATH)/bin
 
 # Make the tool executable
-chmod +x advanced_recon.py
+chmod +x larhenum.py
 ```
 
 ## 📖 Usage
 
 ### Basic Usage
 ```bash
-./advanced_recon.py
+./larhenum.py
 ```
 
 ### Example Run
 ```bash
-$ ./advanced_recon.py
+$ ./larhenum.py
 
 ╔════════════════════════════════════════════════════════════╗
 ║                                                            ║
-  TARGET WILDCARD (e.g., target.com)
+            TARGET WILDCARD (e.g., target.com)
 ║                                                            ║
 ╚════════════════════════════════════════════════════════════╝
 
@@ -169,7 +179,7 @@ pip3 install colorama
 
 3-)Permission denied
 ```bash
-chmod +x advanced_recon.py
+chmod +x larhenum.py
 chmod +x install.sh
 ```
 
