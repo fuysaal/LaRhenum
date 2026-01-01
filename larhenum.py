@@ -5,6 +5,7 @@ import time
 import subprocess
 import threading
 import json
+import shutil
 from colorama import init, Fore, Style
 
 init(autoreset=True)
@@ -15,16 +16,16 @@ def clear_screen():
 def print_banner():
     banner = f"""
 {Fore.RED}
-$$\              $$\ $$$$$$$\  $$\                   
-$$ |             $  |$$  __$$\ $$ |                  
+$$\              $$\ $$$$$$$\  $$\
+$$ |             $  |$$  __$$\ $$ |
 $$ |      $$$$$$\\_/ $$ |  $$ |$$$$$$$\   $$$$$$\  $$$$$$$\
 $$ |      \____$$\   $$$$$$$  |$$  __$$\ $$  __$$\ $$  __$$\
 $$ |      $$$$$$$ |  $$  __$$< $$ |  $$ |$$$$$$$$ |$$ |  $$ |
 $$ |     $$  __$$ |  $$ |  $$ |$$ |  $$ |$$   ____|$$ |  $$ |
 $$$$$$$$\\$$$$$$$ |  $$ |  $$ |$$ |  $$ |\$$$$$$$\ $$ |  $$ |
 \________|\_______|  \__|  \__|\__|  \__| \_______|\__|  \__|
-                                                     
-                                                     
+
+
 {Style.RESET_ALL}
 {Fore.YELLOW}
 ╔══════════════════════════════════════════╗
@@ -120,7 +121,7 @@ def get_domain_input():
 {Fore.CYAN}
 ╔════════════════════════════════════════════════════════════╗
 ║                                                            ║
-  {Fore.WHITE}TARGET WILDCARD (e.g., target.com){Fore.CYAN} 
+  {Fore.WHITE}TARGET WILDCARD (e.g., target.com){Fore.CYAN}
 ║                                                            ║
 ╚════════════════════════════════════════════════════════════╝
 {Style.RESET_ALL}
@@ -128,7 +129,7 @@ def get_domain_input():
     print(input_box)
 
     while True:
-        Domain = input(f"{Fore.GREEN}[?]{Style.RESET_ALL} Domain: ").strip()
+        domain = input(f"{Fore.GREEN}[?]{Style.RESET_ALL} Domain: ").strip()
 
         if not domain:
             print(f"{Fore.RED}[!] No domain entered!{Style.RESET_ALL}")
@@ -145,6 +146,202 @@ def get_domain_input():
                 continue
 
         return domain
+
+def organize_status_code_files():
+    """Status code dosyalarını status_code klasörüne taşır"""
+    
+    status_dir = "status_codes"
+    
+    
+    if not os.path.exists(status_dir):
+        os.makedirs(status_dir)
+    
+    
+    status_files = []
+    for status_code in [200, 301, 302, 401, 403, 404]:
+        filename = f"sc{status_code}.txt"
+        if os.path.exists(filename):
+            status_files.append(filename)
+    
+    if os.path.exists("interestingsc.txt"):
+        status_files.append("interestingsc.txt")
+    
+    
+    moved_files = []
+    for filename in status_files:
+        try:
+            shutil.move(filename, os.path.join(status_dir, filename))
+            moved_files.append(filename)
+        except Exception as e:
+            print(f"{Fore.YELLOW}[!] Could not move {filename}: {e}{Style.RESET_ALL}")
+    
+    if moved_files:
+        print(f"\n{Fore.GREEN}[✓]{Style.RESET_ALL} Moved {len(moved_files)} status code files to '{status_dir}/' directory")
+        
+       
+        print(f"\n{Fore.CYAN}[*] Status Code Directory Contents:{Style.RESET_ALL}")
+        for filename in sorted(moved_files):
+            filepath = os.path.join(status_dir, filename)
+            if os.path.exists(filepath):
+                with open(filepath, 'r') as f:
+                    line_count = len(f.readlines())
+                print(f"  {Fore.GREEN}›{Style.RESET_ALL} {filename:20}: {line_count:4} entries")
+    
+    return len(moved_files)
+
+def analyze_httpx_json(json_file_path):
+    """HTTPX JSON çıktısını analiz eder ve status code'lara göre dosyalara ayırır"""
+
+    if not os.path.exists(json_file_path):
+        print(f"{Fore.RED}[!] JSON file not found: {json_file_path}{Style.RESET_ALL}")
+        return
+
+    print(f"\n{Fore.CYAN}[*] Analyzing HTTPX JSON results...{Style.RESET_ALL}")
+
+    try:
+      
+        with open(json_file_path, 'r') as f:
+            lines = f.readlines()
+
+        if not lines:
+            print(f"{Fore.YELLOW}[!] JSON file is empty{Style.RESET_ALL}")
+            return
+
+        
+        entries = []
+        for line in lines:
+            line = line.strip()
+            if line:
+                try:
+                    entries.append(json.loads(line))
+                except json.JSONDecodeError as e:
+                    print(f"{Fore.YELLOW}[!] JSON parse error: {e}{Style.RESET_ALL}")
+                    continue
+
+        print(f"{Fore.GREEN}[✓]{Style.RESET_ALL} Parsed {len(entries)} entries from JSON")
+
+        
+        status_200 = []
+        status_301 = []
+        status_302 = []
+        status_401 = []
+        status_403 = []
+        status_404 = []
+        interesting = []
+
+        for entry in entries:
+            url = entry.get('url', entry.get('input', ''))
+            status = entry.get('status_code', 0)
+
+            if not url:
+                continue
+
+            if status == 200:
+                status_200.append(url)
+            elif status == 301:
+                status_301.append(url)
+            elif status == 302:
+                status_302.append(url)
+            elif status == 401:
+                status_401.append(url)
+            elif status == 403:
+                status_403.append(url)
+            elif status == 404:
+                status_404.append(url)
+            else:
+                interesting.append(f"{url} - {status}")
+
+       
+        if status_200:
+            with open('sc200.txt', 'w') as f:
+                for url in sorted(set(status_200)):
+                    f.write(f"{url}\n")
+            print(f"{Fore.GREEN}[✓]{Style.RESET_ALL} sc200.txt created with {len(set(status_200))} URLs")
+
+        if status_301:
+            with open('sc301.txt', 'w') as f:
+                for url in sorted(set(status_301)):
+                    f.write(f"{url}\n")
+            print(f"{Fore.GREEN}[✓]{Style.RESET_ALL} sc301.txt created with {len(set(status_301))} URLs")
+
+        if status_302:
+            with open('sc302.txt', 'w') as f:
+                for url in sorted(set(status_302)):
+                    f.write(f"{url}\n")
+            print(f"{Fore.GREEN}[✓]{Style.RESET_ALL} sc302.txt created with {len(set(status_302))} URLs")
+
+        if status_401:
+            with open('sc401.txt', 'w') as f:
+                for url in sorted(set(status_401)):
+                    f.write(f"{url}\n")
+            print(f"{Fore.GREEN}[✓]{Style.RESET_ALL} sc401.txt created with {len(set(status_401))} URLs")
+
+        if status_403:
+            with open('sc403.txt', 'w') as f:
+                for url in sorted(set(status_403)):
+                    f.write(f"{url}\n")
+            print(f"{Fore.GREEN}[✓]{Style.RESET_ALL} sc403.txt created with {len(set(status_403))} URLs")
+
+        if status_404:
+            with open('sc404.txt', 'w') as f:
+                for url in sorted(set(status_404)):
+                    f.write(f"{url}\n")
+            print(f"{Fore.GREEN}[✓]{Style.RESET_ALL} sc404.txt created with {len(set(status_404))} URLs")
+
+        if interesting:
+            with open('interestingsc.txt', 'w') as f:
+                for item in interesting:
+                    f.write(f"{item}\n")
+            print(f"{Fore.GREEN}[✓]{Style.RESET_ALL} interestingsc.txt created with {len(interesting)} interesting status codes")
+
+       
+        total = len(entries)
+        if total > 0:
+            print(f"\n{Fore.CYAN}[*] Status Code Summary:{Style.RESET_ALL}")
+            if status_200:
+                print(f"  {Fore.GREEN}›{Style.RESET_ALL} 200: {len(set(status_200))} URLs")
+            if status_301:
+                print(f"  {Fore.GREEN}›{Style.RESET_ALL} 301: {len(set(status_301))} URLs")
+            if status_302:
+                print(f"  {Fore.GREEN}›{Style.RESET_ALL} 302: {len(set(status_302))} URLs")
+            if status_401:
+                print(f"  {Fore.GREEN}›{Style.RESET_ALL} 401: {len(set(status_401))} URLs")
+            if status_403:
+                print(f"  {Fore.GREEN}›{Style.RESET_ALL} 403: {len(set(status_403))} URLs")
+            if status_404:
+                print(f"  {Fore.GREEN}›{Style.RESET_ALL} 404: {len(set(status_404))} URLs")
+            if interesting:
+                print(f"  {Fore.YELLOW}›{Style.RESET_ALL} Other: {len(interesting)} URLs")
+
+        
+        files_moved = organize_status_code_files()
+        
+        if files_moved > 0:
+            print(f"{Fore.GREEN}[✓]{Style.RESET_ALL} Status code analysis and organization completed!")
+        else:
+            print(f"{Fore.YELLOW}[!] No status code files to organize{Style.RESET_ALL}")
+
+    except Exception as e:
+        print(f"{Fore.RED}[!] Error in analyze_httpx_json: {e}{Style.RESET_ALL}")
+        import traceback
+        traceback.print_exc()
+
+def read_httpx_json_properly(json_file_path):
+    """HTTPX JSON dosyasını doğru şekilde okur"""
+    entries = []
+    try:
+        with open(json_file_path, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    try:
+                        entries.append(json.loads(line))
+                    except json.JSONDecodeError:
+                        continue
+        return entries
+    except Exception as e:
+        print(f"{Fore.RED}[!] Error reading JSON: {e}{Style.RESET_ALL}")
+        return []
 
 def main():
     clear_screen()
@@ -196,7 +393,7 @@ def main():
 ╔══════════════════════════════════════════════╗
 ║                                              ║
 ║          R E C O N   S T A R T E D           ║
-║           Target: {domain:^20}               ║
+            Target: {domain:^20}               
 ║                                              ║
 ╚══════════════════════════════════════════════╝
 {Style.RESET_ALL}
@@ -300,13 +497,15 @@ def main():
             )
 
             if success and os.path.exists('httpx_results.json'):
-                with open('httpx_results.json', 'r') as f:
-                    json_data = json.load(f) if os.path.getsize('httpx_results.json') > 0 else []
-                    if isinstance(json_data, list):
-                        json_count = len(json_data)
-                    else:
-                        json_count = 1
-                print(f"\n{Fore.GREEN}[*] JSON results saved: {json_count} entries{Style.RESET_ALL}")
+                
+                entries = read_httpx_json_properly('httpx_results.json')
+                if entries:
+                    print(f"\n{Fore.GREEN}[*] JSON results saved: {len(entries)} entries{Style.RESET_ALL}")
+
+                   
+                    analyze_httpx_json('httpx_results.json')
+                else:
+                    print(f"{Fore.RED}[!] Could not read JSON file properly{Style.RESET_ALL}")
 
     print(f"\n{Fore.CYAN}[*] Recon completed!{Style.RESET_ALL}")
     print(f"{Fore.GREEN}[*] Output directory: {os.getcwd()}{Style.RESET_ALL}")
@@ -316,13 +515,39 @@ def main():
         print(f"{Fore.GREEN}[*] JSON results: httpx_results.json{Style.RESET_ALL}")
     if os.path.exists('live_subs.txt'):
         print(f"{Fore.GREEN}[*] Live subdomains: live_subs.txt{Style.RESET_ALL}")
+    
+    
+    status_dir = "status_codes"
+    if os.path.exists(status_dir):
+        print(f"{Fore.GREEN}[*] Status code files: {status_dir}/ directory{Style.RESET_ALL}")
+        
+       
+        status_files = []
+        for status_code in [200, 301, 302, 401, 403, 404]:
+            filename = f"sc{status_code}.txt"
+            filepath = os.path.join(status_dir, filename)
+            if os.path.exists(filepath):
+                with open(filepath, 'r') as f:
+                    line_count = len(f.readlines())
+                status_files.append((filename, line_count))
+        
+        interesting_path = os.path.join(status_dir, "interestingsc.txt")
+        if os.path.exists(interesting_path):
+            with open(interesting_path, 'r') as f:
+                interesting_count = len(f.readlines())
+            status_files.append(("interestingsc.txt", interesting_count))
+        
+        if status_files:
+            print(f"\n{Fore.CYAN}[*] Status Code Files in '{status_dir}/':{Style.RESET_ALL}")
+            for filename, count in status_files:
+                print(f"  {Fore.GREEN}›{Style.RESET_ALL} {filename:20}: {count:4} entries")
 
 def print_footer():
     footer = f"""
 {Fore.CYAN}
 ╔══════════════════════════════════════════════════════════════════════╗
 ║                                                                      ║
-║  {Fore.WHITE}Created by: La'Rhen - Advanced Recon Tool{Fore.CYAN}    ║
+   {Fore.WHITE}Created by: La'Rhen - Advanced Recon Tool{Fore.CYAN}    
 ║                                                                      ║
 ╚══════════════════════════════════════════════════════════════════════╝
 {Style.RESET_ALL}
@@ -338,4 +563,6 @@ if __name__ == "__main__":
         sys.exit(0)
     except Exception as e:
         print(f"\n\n{Fore.RED}[!] Critical Error: {e}{Style.RESET_ALL}")
+        import traceback
+        traceback.print_exc()
         sys.exit(1)
