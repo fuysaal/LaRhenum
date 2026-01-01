@@ -16,9 +16,17 @@ Advanced reconnaissance tool for subdomain enumeration and analysis.
 
 ## Installation
 ```bash
-git clone https://github.com/fuysaal/larhenum.git
-cd larhenum
-pip3 install .
+git clone https://github.com/fuysaal/larhenum.git && chmod +x install.sh && chmod +x larhenum.py
+pip3 install -r requirements.txt
+./install.sh
+python3 larhenum.py
+```
+If don't start install.sh 
+```bash
+cd larhenum 
+python3 -m venv venv
+source venv/bin/activae
+./install.sh
 ```
 
 ### Quick Install
