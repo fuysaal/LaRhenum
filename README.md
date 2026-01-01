@@ -137,31 +137,31 @@ recon_example.com_20231215_143022/
 
 The tool runs automatically through all stages:
 
-  1-)AssetFinder: Subdomain enumeration
+  AssetFinder: Subdomain enumeration
 
-  2-)SubFinder: Comprehensive subdomain discovery
+  SubFinder: Comprehensive subdomain discovery
 
-  3-)Samoscout: Additional subdomain source
+  Samoscout: Additional subdomain source
 
-  4-)CRT.sh: Certificate transparency logs
+  CRT.sh: Certificate transparency logs
 
-  5-)HTTPX: Live subdomain checking and analysis
+  HTTPX: Live subdomain checking and analysis
 
 ###  Status Code Analysis
 
 The tool automatically analyzes HTTPX JSON output and organizes URLs:
 
-  1-)200 OK: Working websites
+  200 OK: Working websites
 
-  2-)301/302: Redirects
+  301/302: Redirects
 
-  3-)401: Authentication required
+  401: Authentication required
 
-  4-)403: Access forbidden
+  403: Access forbidden
 
-  5-)404: Not found
+  404: Not found
 
-  6-)Others: Interesting status codes (500, 503, etc.)
+  Others: Interesting status codes (500, 503, etc.)
 
 ### Troubleshooting
 
