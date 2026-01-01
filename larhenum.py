@@ -120,7 +120,7 @@ def get_domain_input():
 {Fore.CYAN}
 ╔════════════════════════════════════════════════════════════╗
 ║                                                            ║
-║  {Fore.WHITE}TARGET WILDCARD (e.g., target.com){Fore.CYAN} ║
+  {Fore.WHITE}TARGET WILDCARD (e.g., target.com){Fore.CYAN} 
 ║                                                            ║
 ╚════════════════════════════════════════════════════════════╝
 {Style.RESET_ALL}
