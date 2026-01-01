@@ -15,7 +15,7 @@ def clear_screen():
 
 def print_banner():
     banner = f"""
-{Fore.RED}
+{Fore.WHITE}
 $$\              $$\ $$$$$$$\  $$\
 $$ |             $  |$$  __$$\ $$ |
 $$ |      $$$$$$\\_/ $$ |  $$ |$$$$$$$\   $$$$$$\  $$$$$$$\
