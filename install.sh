@@ -278,10 +278,8 @@ install_security_tools() {
     
     LARHEN_TOOLS_DIR="$HOME/Larhen_Tools"
     
-    # Larhen_Tools dizinini oluştur
     mkdir -p "$LARHEN_TOOLS_DIR"
     
-    # Corsy kurulumu
     print_step "Installing Corsy..."
     CORSY_DIR="$LARHEN_TOOLS_DIR/Corsy"
     if [ -d "$CORSY_DIR" ]; then
@@ -289,7 +287,6 @@ install_security_tools() {
     else
         if git clone https://github.com/s0md3v/Corsy.git "$CORSY_DIR" 2>/dev/null; then
             print_success "Corsy installed"
-            # requirements.txt'i kontrol et ve kur
             if [ -f "$CORSY_DIR/requirements.txt" ]; then
                 print_step "Installing Corsy dependencies..."
                 if pip3 install -r "$CORSY_DIR/requirements.txt" 2>&1; then
@@ -303,7 +300,6 @@ install_security_tools() {
         fi
     fi
     
-    # LinkFinder kurulumu
     print_step "Installing LinkFinder..."
     LINKFINDER_DIR="$LARHEN_TOOLS_DIR/LinkFinder"
     if [ -d "$LINKFINDER_DIR" ]; then
@@ -311,7 +307,6 @@ install_security_tools() {
     else
         if git clone https://github.com/GerbenJavado/LinkFinder.git "$LINKFINDER_DIR" 2>/dev/null; then
             print_success "LinkFinder installed"
-            # requirements.txt'i kontrol et ve kur
             if [ -f "$LINKFINDER_DIR/requirements.txt" ]; then
                 print_step "Installing LinkFinder dependencies..."
                 if pip3 install -r "$LINKFINDER_DIR/requirements.txt" 2>&1; then
@@ -320,7 +315,6 @@ install_security_tools() {
                     print_warning "Failed to install LinkFinder dependencies"
                 fi
             fi
-            # setup.py varsa kur
             if [ -f "$LINKFINDER_DIR/setup.py" ]; then
                 print_step "Running LinkFinder setup..."
                 cd "$LINKFINDER_DIR" && pip3 install . 2>&1 && cd - > /dev/null
@@ -331,7 +325,6 @@ install_security_tools() {
         fi
     fi
     
-    # SecretFinder kurulumu
     print_step "Installing SecretFinder..."
     SECRETFINDER_DIR="$LARHEN_TOOLS_DIR/SecretFinder"
     if [ -d "$SECRETFINDER_DIR" ]; then
@@ -339,7 +332,6 @@ install_security_tools() {
     else
         if git clone https://github.com/m4ll0k/SecretFinder.git "$SECRETFINDER_DIR" 2>/dev/null; then
             print_success "SecretFinder installed"
-            # requirements.txt'i kontrol et ve kur
             if [ -f "$SECRETFINDER_DIR/requirements.txt" ]; then
                 print_step "Installing SecretFinder dependencies..."
                 if pip3 install -r "$SECRETFINDER_DIR/requirements.txt" 2>&1; then
@@ -353,22 +345,18 @@ install_security_tools() {
         fi
     fi
     
-    # Araçların çalıştırılabilir olduğundan emin ol
     print_step "Making tools executable..."
     
-    # Corsy'yi çalıştırılabilir yap
     if [ -f "$CORSY_DIR/corsy.py" ]; then
         chmod +x "$CORSY_DIR/corsy.py"
         print_success "Made corsy.py executable"
     fi
     
-    # LinkFinder'ı çalıştırılabilir yap
     if [ -f "$LINKFINDER_DIR/linkfinder.py" ]; then
         chmod +x "$LINKFINDER_DIR/linkfinder.py"
         print_success "Made linkfinder.py executable"
     fi
     
-    # SecretFinder'ı çalıştırılabilir yap
     if [ -f "$SECRETFINDER_DIR/SecretFinder.py" ]; then
         chmod +x "$SECRETFINDER_DIR/SecretFinder.py"
         print_success "Made SecretFinder.py executable"
@@ -667,21 +655,18 @@ verify_installation() {
     
     LARHEN_TOOLS_DIR="$HOME/Larhen_Tools"
     
-    # Corsy kontrolü
     if [ -d "$LARHEN_TOOLS_DIR/Corsy" ] && [ -f "$LARHEN_TOOLS_DIR/Corsy/corsy.py" ]; then
         echo -e "  ${GREEN}✓${NC} Corsy"
     else
         echo -e "  ${RED}✗${NC} Corsy"
     fi
     
-    # LinkFinder kontrolü
     if [ -d "$LARHEN_TOOLS_DIR/LinkFinder" ] && [ -f "$LARHEN_TOOLS_DIR/LinkFinder/linkfinder.py" ]; then
         echo -e "  ${GREEN}✓${NC} LinkFinder"
     else
         echo -e "  ${RED}✗${NC} LinkFinder"
     fi
     
-    # SecretFinder kontrolü
     if [ -d "$LARHEN_TOOLS_DIR/SecretFinder" ] && [ -f "$LARHEN_TOOLS_DIR/SecretFinder/SecretFinder.py" ]; then
         echo -e "  ${GREEN}✓${NC} SecretFinder"
     else
