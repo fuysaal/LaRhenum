@@ -92,7 +92,7 @@ class Larhenum:
                 text=True
             )
             
-            stdout, stderr = process.communicate(timeout=300)
+            stdout, stderr = process.communicate(timeout=900)
             
             self.stop_event.set()
             anim_thread.join()
