@@ -1,576 +1,702 @@
 #!/usr/bin/env python3
+
 import os
 import sys
+import json
 import time
+import shutil
 import subprocess
 import threading
-import json
-import shutil
-from colorama import init, Fore, Style
+from datetime import datetime
+from colorama import init, Fore, Style, Back
 
 init(autoreset=True)
 
-def clear_screen():
-    os.system('cls' if os.name == 'nt' else 'clear')
-
-def print_banner():
-    banner = f"""
-{Fore.WHITE}
-                                                                                       
-                                                                                       
-    $$\              $$\ $$$$$$$\  $$\                                                  
-    $$ |             $  |$$  __$$\ $$ |                                                 
-    $$ |      $$$$$$\\_/ $$ |  $$ |$$$$$$$\   $$$$$$\  $$$$$$$\                         
-    $$ |      \____$$\   $$$$$$$  |$$  __$$\ $$  __$$\ $$  __$$\                        
-    $$ |      $$$$$$$ |  $$  __$$< $$ |  $$ |$$$$$$$$ |$$ |  $$ |                       
-    $$ |     $$  __$$ |  $$ |  $$ |$$ |  $$ |$$   ____|$$ |  $$ |                       
-    $$$$$$$$\\$$$$$$$ |  $$ |  $$ |$$ |  $$ |\$$$$$$$\ $$ |  $$ |                       
-    \________|\_______|  \__|  \__|\__|  \__| \_______|\__|  \__|                       
-                                                                                    
-                                                                                        
-                                                                                       
-{Style.RESET_ALL}
-{Fore.YELLOW}
+class Larhenum:
+    def __init__(self):
+        self.target = ""
+        self.recon_dir = ""
+        self.stop_event = threading.Event()
+        self.user_home = os.path.expanduser("~")
+        self.tools_dir = os.path.join(self.user_home, "Larhen_Tools")
+        
+    def clear_screen(self):
+        os.system('clear' if os.name != 'nt' else 'cls')
+    
+    def print_banner(self):
+        banner = f"""{Fore.RED}
+        
+        
+	$$\              $$\ $$$$$$$\  $$\                                                                                                     
+	$$ |             $  |$$  __$$\ $$ |                                                                                                    
+	$$ |      $$$$$$\\_/ $$ |  $$ |$$$$$$$\   $$$$$$\  $$$$$$$\  $$\   $$\ $$$$$$\$$$$\                                                    
+	$$ |      \____$$\   $$$$$$$  |$$  __$$\ $$  __$$\ $$  __$$\ $$ |  $$ |$$  _$$  _$$\                                                   
+	$$ |      $$$$$$$ |  $$  __$$< $$ |  $$ |$$$$$$$$ |$$ |  $$ |$$ |  $$ |$$ / $$ / $$ |                                                  
+	$$ |     $$  __$$ |  $$ |  $$ |$$ |  $$ |$$   ____|$$ |  $$ |$$ |  $$ |$$ | $$ | $$ |                                                  
+	$$$$$$$$\\$$$$$$$ |  $$ |  $$ |$$ |  $$ |\$$$$$$$\ $$ |  $$ |\$$$$$$  |$$ | $$ | $$ |                                                  
+	\________|\_______|  \__|  \__|\__|  \__| \_______|\__|  \__| \______/ \__| \__| \__|                                                  
+                                                                                                                                                                                                                                                                              
+                                                                                                                                                                                                                                                                                                                                                                                                                     
+{Style.RESET_ALL}{Fore.YELLOW}
 ╔══════════════════════════════════════════╗
 ║         Advanced Reconnaissance Tool     ║
-╚══════════════════════════════════════════╝
-{Style.RESET_ALL}
+╚══════════════════════════════════════════╝{Style.RESET_ALL}
 """
-    print(banner)
-
-def check_tools():
-    required_tools = {
-        'assetfinder': 'assetfinder --help',
-        'subfinder': 'subfinder --help',
-        'anew': 'anew --help',
-        'samoscout': 'samoscout --help',
-        'httpx': 'httpx --help'
-    }
-
-    print(f"\n{Fore.CYAN}[*] Checking tools...{Style.RESET_ALL}")
-
-    missing_tools = []
-    for tool, test_cmd in required_tools.items():
-        try:
-            result = subprocess.run(test_cmd, shell=True, stdout=subprocess.DEVNULL,
-                                  stderr=subprocess.DEVNULL, timeout=3)
-            if result.returncode != 0:
-                missing_tools.append(tool)
-        except (FileNotFoundError, subprocess.TimeoutExpired):
-            missing_tools.append(tool)
-
-    return missing_tools
-
-def run_tool(command, tool_name, output_file=None):
-    print(f"\n{Fore.YELLOW}╔═══[{tool_name}]══════════════════════════════════════╗{Style.RESET_ALL}")
-    print(f"{Fore.WHITE}Command: {command}{Style.RESET_ALL}")
-
-    stop_animation = False
-    animation_frames = ["[■□□□□□□□□□]", "[■■□□□□□□□□]", "[■■■□□□□□□□]",
-                       "[■■■■□□□□□□]", "[■■■■■□□□□□]", "[■■■■■■□□□□]",
-                       "[■■■■■■■□□□]", "[■■■■■■■■□□]", "[■■■■■■■■■□]",
-                       "[■■■■■■■■■■]"]
-
-    def animate():
+        print(banner)
+        print(f"{Fore.CYAN}Version: 1.0.0{Style.RESET_ALL}")
+        print(f"{Fore.CYAN}Author: La'Rhen{Style.RESET_ALL}")
+        print("=" * 45)
+        print()
+    
+    def animate_progress(self, message, completed=False):
+        if completed:
+            sys.stdout.write(f'\r{Fore.GREEN}[■■■■■■■■■■]{Style.RESET_ALL} {message}')
+            sys.stdout.flush()
+            time.sleep(0.3)
+            return
+        
+        frames = ["[■□□□□□□□□□]", "[■■□□□□□□□□]", "[■■■□□□□□□□]",
+                 "[■■■■□□□□□□]", "[■■■■■□□□□□]", "[■■■■■■□□□□]",
+                 "[■■■■■■■□□□]", "[■■■■■■■■□□]", "[■■■■■■■■■□]"]
+        
         i = 0
-        while not stop_animation:
-            frame = animation_frames[i % len(animation_frames)]
+        while not self.stop_event.is_set():
+            frame_idx = i % len(frames)
             color = Fore.GREEN if i % 2 == 0 else Fore.YELLOW
-            print(f"\r{color}{frame}{Style.RESET_ALL} Running...", end="", flush=True)
+            sys.stdout.write(f'\r{color}{frames[frame_idx]}{Style.RESET_ALL} {message}')
+            sys.stdout.flush()
             time.sleep(0.1)
             i += 1
-
-    anim_thread = threading.Thread(target=animate)
-    anim_thread.daemon = True
-    anim_thread.start()
-
-    try:
-        start_time = time.time()
-        if output_file:
-            with open(output_file, 'w') as f:
-                result = subprocess.run(command, shell=True, stdout=f,
-                                      stderr=subprocess.PIPE, text=True)
+    
+    def run_tool_with_progress(self, cmd, tool_name, show_cmd=True):
+        if show_cmd:
+            print(f"\n{Fore.YELLOW}╔══════════════════[{tool_name}]══════════════════╗{Style.RESET_ALL}")
+            clean_cmd = cmd.split('>')[0].strip() if '>' in cmd else cmd
+            print(f"{Fore.WHITE}{clean_cmd}{Style.RESET_ALL}")
         else:
-            result = subprocess.run(command, shell=True, capture_output=True, text=True)
-
-        stop_animation = True
-        time.sleep(0.1)
-        elapsed_time = time.time() - start_time
-
-        if result.returncode == 0:
-            if output_file and os.path.exists(output_file):
-                with open(output_file, 'r') as f:
-                    line_count = len(f.readlines())
-            elif result.stdout:
-                line_count = len(result.stdout.strip().split('\n'))
-            else:
-                line_count = 0
-
-            print(f"\r{Fore.GREEN}[✓]{Style.RESET_ALL} {tool_name} completed! "
-                  f"({line_count} results, {elapsed_time:.1f}s)")
-
-            return True, line_count
-        else:
-            print(f"\r{Fore.RED}[✗]{Style.RESET_ALL} {tool_name} error: {result.stderr[:100]}")
-            return False, 0
-
-    except Exception as e:
-        stop_animation = True
-        print(f"\r{Fore.RED}[✗]{Style.RESET_ALL} {tool_name} exception: {str(e)[:100]}")
-        return False, 0
-
-def get_domain_input():
-    input_box = f"""
-{Fore.CYAN}
-╔════════════════════════════════════════════════════════════╗
-║                                                            ║
-  {Fore.WHITE}TARGET WILDCARD (e.g., target.com){Fore.CYAN}
-║                                                            ║
-╚════════════════════════════════════════════════════════════╝
-{Style.RESET_ALL}
-"""
-    print(input_box)
-
-    while True:
-        domain = input(f"{Fore.GREEN}[?]{Style.RESET_ALL} Domain: ").strip()
-
-        if not domain:
-            print(f"{Fore.RED}[!] No domain entered!{Style.RESET_ALL}")
-            continue
-
-        if ' ' in domain:
-            print(f"{Fore.RED}[!] Domain cannot contain spaces!{Style.RESET_ALL}")
-            continue
-
-        if '.' not in domain:
-            print(f"{Fore.YELLOW}[!] Warning: Does not look like a valid domain{Style.RESET_ALL}")
-            proceed = input(f"{Fore.YELLOW}[?] Continue anyway? (y/n): {Style.RESET_ALL}")
-            if proceed.lower() != 'y':
-                continue
-
-        return domain
-
-def organize_status_code_files():
-    """Status code dosyalarını status_code klasörüne taşır"""
-    
-    status_dir = "status_codes"
-    
-    
-    if not os.path.exists(status_dir):
-        os.makedirs(status_dir)
-    
-    
-    status_files = []
-    for status_code in [200, 301, 302, 401, 403, 404]:
-        filename = f"sc{status_code}.txt"
-        if os.path.exists(filename):
-            status_files.append(filename)
-    
-    if os.path.exists("interestingsc.txt"):
-        status_files.append("interestingsc.txt")
-    
-    
-    moved_files = []
-    for filename in status_files:
+            print(f"\n{Fore.YELLOW}╔══════════════════[{tool_name}]══════════════════╗{Style.RESET_ALL}")
+        
+        self.stop_event.clear()
+        anim_thread = threading.Thread(
+            target=self.animate_progress,
+            args=(f"Running {tool_name}",)
+        )
+        anim_thread.start()
+        
         try:
-            shutil.move(filename, os.path.join(status_dir, filename))
-            moved_files.append(filename)
-        except Exception as e:
-            print(f"{Fore.YELLOW}[!] Could not move {filename}: {e}{Style.RESET_ALL}")
-    
-    if moved_files:
-        print(f"\n{Fore.GREEN}[✓]{Style.RESET_ALL} Moved {len(moved_files)} status code files to '{status_dir}/' directory")
-        
-       
-        print(f"\n{Fore.CYAN}[*] Status Code Directory Contents:{Style.RESET_ALL}")
-        for filename in sorted(moved_files):
-            filepath = os.path.join(status_dir, filename)
-            if os.path.exists(filepath):
-                with open(filepath, 'r') as f:
-                    line_count = len(f.readlines())
-                print(f"  {Fore.GREEN}›{Style.RESET_ALL} {filename:20}: {line_count:4} entries")
-    
-    return len(moved_files)
-
-def analyze_httpx_json(json_file_path):
-    """HTTPX JSON çıktısını analiz eder ve status code'lara göre dosyalara ayırır"""
-
-    if not os.path.exists(json_file_path):
-        print(f"{Fore.RED}[!] JSON file not found: {json_file_path}{Style.RESET_ALL}")
-        return
-
-    print(f"\n{Fore.CYAN}[*] Analyzing HTTPX JSON results...{Style.RESET_ALL}")
-
-    try:
-      
-        with open(json_file_path, 'r') as f:
-            lines = f.readlines()
-
-        if not lines:
-            print(f"{Fore.YELLOW}[!] JSON file is empty{Style.RESET_ALL}")
-            return
-
-        
-        entries = []
-        for line in lines:
-            line = line.strip()
-            if line:
-                try:
-                    entries.append(json.loads(line))
-                except json.JSONDecodeError as e:
-                    print(f"{Fore.YELLOW}[!] JSON parse error: {e}{Style.RESET_ALL}")
-                    continue
-
-        print(f"{Fore.GREEN}[✓]{Style.RESET_ALL} Parsed {len(entries)} entries from JSON")
-
-        
-        status_200 = []
-        status_301 = []
-        status_302 = []
-        status_401 = []
-        status_403 = []
-        status_404 = []
-        interesting = []
-
-        for entry in entries:
-            url = entry.get('url', entry.get('input', ''))
-            status = entry.get('status_code', 0)
-
-            if not url:
-                continue
-
-            if status == 200:
-                status_200.append(url)
-            elif status == 301:
-                status_301.append(url)
-            elif status == 302:
-                status_302.append(url)
-            elif status == 401:
-                status_401.append(url)
-            elif status == 403:
-                status_403.append(url)
-            elif status == 404:
-                status_404.append(url)
-            else:
-                interesting.append(f"{url} - {status}")
-
-       
-        if status_200:
-            with open('sc200.txt', 'w') as f:
-                for url in sorted(set(status_200)):
-                    f.write(f"{url}\n")
-            print(f"{Fore.GREEN}[✓]{Style.RESET_ALL} sc200.txt created with {len(set(status_200))} URLs")
-
-        if status_301:
-            with open('sc301.txt', 'w') as f:
-                for url in sorted(set(status_301)):
-                    f.write(f"{url}\n")
-            print(f"{Fore.GREEN}[✓]{Style.RESET_ALL} sc301.txt created with {len(set(status_301))} URLs")
-
-        if status_302:
-            with open('sc302.txt', 'w') as f:
-                for url in sorted(set(status_302)):
-                    f.write(f"{url}\n")
-            print(f"{Fore.GREEN}[✓]{Style.RESET_ALL} sc302.txt created with {len(set(status_302))} URLs")
-
-        if status_401:
-            with open('sc401.txt', 'w') as f:
-                for url in sorted(set(status_401)):
-                    f.write(f"{url}\n")
-            print(f"{Fore.GREEN}[✓]{Style.RESET_ALL} sc401.txt created with {len(set(status_401))} URLs")
-
-        if status_403:
-            with open('sc403.txt', 'w') as f:
-                for url in sorted(set(status_403)):
-                    f.write(f"{url}\n")
-            print(f"{Fore.GREEN}[✓]{Style.RESET_ALL} sc403.txt created with {len(set(status_403))} URLs")
-
-        if status_404:
-            with open('sc404.txt', 'w') as f:
-                for url in sorted(set(status_404)):
-                    f.write(f"{url}\n")
-            print(f"{Fore.GREEN}[✓]{Style.RESET_ALL} sc404.txt created with {len(set(status_404))} URLs")
-
-        if interesting:
-            with open('interestingsc.txt', 'w') as f:
-                for item in interesting:
-                    f.write(f"{item}\n")
-            print(f"{Fore.GREEN}[✓]{Style.RESET_ALL} interestingsc.txt created with {len(interesting)} interesting status codes")
-
-       
-        total = len(entries)
-        if total > 0:
-            print(f"\n{Fore.CYAN}[*] Status Code Summary:{Style.RESET_ALL}")
-            if status_200:
-                print(f"  {Fore.GREEN}›{Style.RESET_ALL} 200: {len(set(status_200))} URLs")
-            if status_301:
-                print(f"  {Fore.GREEN}›{Style.RESET_ALL} 301: {len(set(status_301))} URLs")
-            if status_302:
-                print(f"  {Fore.GREEN}›{Style.RESET_ALL} 302: {len(set(status_302))} URLs")
-            if status_401:
-                print(f"  {Fore.GREEN}›{Style.RESET_ALL} 401: {len(set(status_401))} URLs")
-            if status_403:
-                print(f"  {Fore.GREEN}›{Style.RESET_ALL} 403: {len(set(status_403))} URLs")
-            if status_404:
-                print(f"  {Fore.GREEN}›{Style.RESET_ALL} 404: {len(set(status_404))} URLs")
-            if interesting:
-                print(f"  {Fore.YELLOW}›{Style.RESET_ALL} Other: {len(interesting)} URLs")
-
-        
-        files_moved = organize_status_code_files()
-        
-        if files_moved > 0:
-            print(f"{Fore.GREEN}[✓]{Style.RESET_ALL} Status code analysis and organization completed!")
-        else:
-            print(f"{Fore.YELLOW}[!] No status code files to organize{Style.RESET_ALL}")
-
-    except Exception as e:
-        print(f"{Fore.RED}[!] Error in analyze_httpx_json: {e}{Style.RESET_ALL}")
-        import traceback
-        traceback.print_exc()
-
-def read_httpx_json_properly(json_file_path):
-    """HTTPX JSON dosyasını doğru şekilde okur"""
-    entries = []
-    try:
-        with open(json_file_path, 'r') as f:
-            for line in f:
-                line = line.strip()
-                if line:
-                    try:
-                        entries.append(json.loads(line))
-                    except json.JSONDecodeError:
-                        continue
-        return entries
-    except Exception as e:
-        print(f"{Fore.RED}[!] Error reading JSON: {e}{Style.RESET_ALL}")
-        return []
-
-def main():
-    clear_screen()
-    print_banner()
-    time.sleep(0.5)
-
-    missing_tools = check_tools()
-
-    if missing_tools:
-        print(f"\n{Fore.RED}[!] Missing tools:{Style.RESET_ALL}")
-        for tool in missing_tools:
-            print(f"  {Fore.YELLOW}•{Style.RESET_ALL} {tool}")
-
-        print(f"\n{Fore.CYAN}[*] Installation commands:{Style.RESET_ALL}")
-        install_commands = {
-            'assetfinder': 'go install github.com/tomnomnom/assetfinder@latest',
-            'subfinder': 'go install -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest',
-            'anew': 'go install github.com/tomnomnom/anew@latest',
-            'samoscout': 'go install github.com/samogod/samoscout@latest',
-            'httpx': 'go install -v github.com/projectdiscovery/httpx/cmd/httpx@latest'
-        }
-
-        for tool in missing_tools:
-            if tool in install_commands:
-                print(f"  {Fore.GREEN}›{Style.RESET_ALL} {install_commands[tool]}")
-
-        print(f"\n{Fore.RED}[!] Please install missing tools and try again.{Style.RESET_ALL}")
-        return
-
-    print(f"\n{Fore.GREEN}[✓] All tools available!{Style.RESET_ALL}")
-
-    print(f"\n{Fore.CYAN}[*] Initializing...{Style.RESET_ALL}")
-    for i in range(3, 0, -1):
-        print(f"\r{Fore.YELLOW}Starting in: {i}{Style.RESET_ALL}", end="", flush=True)
-        time.sleep(1)
-    print(f"\r{Fore.GREEN}Starting!{Style.RESET_ALL}")
-
-    domain = get_domain_input()
-
-    timestamp = time.strftime("%Y%m%d_%H%M%S")
-    output_dir = f"recon_{domain}_{timestamp}"
-    os.makedirs(output_dir, exist_ok=True)
-    os.chdir(output_dir)
-
-    print(f"\n{Fore.CYAN}[*] Output directory: {os.getcwd()}{Style.RESET_ALL}")
-
-    recon_header = f"""
-{Fore.RED}
-╔══════════════════════════════════════════════╗
-║                                              ║
-║          R E C O N   S T A R T E D           ║
-            Target: {domain:^20}               
-║                                              ║
-╚══════════════════════════════════════════════╝
-{Style.RESET_ALL}
-"""
-    print(recon_header)
-
-    results = {}
-
-    success, count = run_tool(
-        f"assetfinder --subs-only {domain}",
-        "AssetFinder",
-        "assetfinder.txt"
-    )
-    if success:
-        results['assetfinder'] = count
-
-    success, count = run_tool(
-        f"subfinder -d {domain} -recursive -all -silent",
-        "SubFinder",
-        "subfinder.txt"
-    )
-    if success:
-        results['subfinder'] = count
-
-    success, count = run_tool(
-        f"samoscout -d {domain} -silent",
-        "Samoscout",
-        "samoscout.txt"
-    )
-    if success:
-        results['samoscout'] = count
-
-    success, count = run_tool(
-        f"curl -s 'https://crt.sh/?q=%.{domain}&output=json' | jq -r '.[].name_value' | sed 's/\\*\\\\.//g' | sort -u",
-        "CRT.sh",
-        "crtsh.txt"
-    )
-    if success:
-        results['crtsh'] = count
-
-    print(f"\n{Fore.CYAN}[*] Merging results...{Style.RESET_ALL}")
-
-    all_domains = set()
-    txt_files = ["assetfinder.txt", "subfinder.txt", "samoscout.txt", "crtsh.txt"]
-
-    for filename in txt_files:
-        if os.path.exists(filename):
-            try:
-                with open(filename, 'r') as f:
-                    for line in f:
-                        domain_line = line.strip()
-                        if domain_line and '.' in domain_line:
-                            all_domains.add(domain_line)
-            except:
-                pass
-
-    with open('all_subs.txt', 'w') as f:
-        for domain_name in sorted(all_domains):
-            f.write(f"{domain_name}\n")
-
-    total_domains = len(all_domains)
-
-    for filename in txt_files:
-        if os.path.exists(filename):
-            os.remove(filename)
-
-    print(f"\n{Fore.GREEN}╔══════════════════════════════════════════════════════════════╗")
-    print(f"║                                                                            ║")
-    print(f"║      R E C O N   C O M P L E T E D !                                       ║")
-    print(f"║                                                                            ║")
-    print(f"║    Total Subdomains Found: {Fore.YELLOW}{total_domains:^6}{Fore.GREEN}     ║")
-    print(f"║                                                                            ║")
-    print(f"╚════════════════════════════════════════════════════════════════════════════╝{Style.RESET_ALL}")
-
-    if results:
-        print(f"\n{Fore.CYAN}[*] Tool Statistics:{Style.RESET_ALL}")
-        for tool, count in results.items():
-            print(f"  {Fore.YELLOW}›{Style.RESET_ALL} {tool:20}: {count:4} subdomains")
-
-    if all_domains:
-        print(f"\n{Fore.CYAN}[*] First 10 Subdomains:{Style.RESET_ALL}")
-        for i, domain_name in enumerate(sorted(all_domains)[:10]):
-            print(f"  {Fore.GREEN}{i+1:2}.{Style.RESET_ALL} {domain_name}")
-
-
-    if total_domains > 0:
-        print(f"\n{Fore.CYAN}[*] Running HTTPX for live subdomains...{Style.RESET_ALL}")
-        
-       
-        success, count = run_tool(
-            f"httpx -l all_subs.txt -title -status-code -tech-detect -silent -o live_subs.txt",
-            "HTTPX Live Check"
-        )
-
-        if success and os.path.exists('live_subs.txt'):
-            with open('live_subs.txt', 'r') as f:
-                live_count = len(f.readlines())
-            print(f"\n{Fore.GREEN}[*] {live_count} live subdomains found!{Style.RESET_ALL}")
-
-       
-        success, count = run_tool(
-            f"httpx -l all_subs.txt -title -status-code -tech-detect -json -silent -o httpx_results.json",
-            "HTTPX JSON Export"
-        )
-
-        if success and os.path.exists('httpx_results.json'):
+            process = subprocess.Popen(
+                cmd,
+                shell=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
             
-            entries = read_httpx_json_properly('httpx_results.json')
-            if entries:
-                print(f"\n{Fore.GREEN}[*] JSON results saved: {len(entries)} entries{Style.RESET_ALL}")
-
-                
-                analyze_httpx_json('httpx_results.json')
+            stdout, stderr = process.communicate(timeout=300)
+            
+            self.stop_event.set()
+            anim_thread.join()
+            
+            self.animate_progress(f"{tool_name} completed", completed=True)
+            print()
+            
+            if process.returncode == 0:
+                return True, stdout
             else:
-                print(f"{Fore.RED}[!] Could not read JSON file properly{Style.RESET_ALL}")
-    else:
-        print(f"\n{Fore.YELLOW}[!] No subdomains found, skipping HTTPX{Style.RESET_ALL}")
-
-    print(f"\n{Fore.CYAN}[*] Recon completed!{Style.RESET_ALL}")
-    print(f"{Fore.GREEN}[*] Output directory: {os.getcwd()}{Style.RESET_ALL}")
-    print(f"{Fore.GREEN}[*] Main file: all_subs.txt{Style.RESET_ALL}")
-
-    if os.path.exists('httpx_results.json'):
-        print(f"{Fore.GREEN}[*] JSON results: httpx_results.json{Style.RESET_ALL}")
-    if os.path.exists('live_subs.txt'):
-        print(f"{Fore.GREEN}[*] Live subdomains: live_subs.txt{Style.RESET_ALL}")
+                return False, stderr
+                
+        except subprocess.TimeoutExpired:
+            process.kill()
+            self.stop_event.set()
+            anim_thread.join()
+            print(f"\r{Fore.RED}[✗]{Style.RESET_ALL} {tool_name} timeout")
+            return False, "Timeout"
+        except Exception as e:
+            self.stop_event.set()
+            anim_thread.join()
+            print(f"\r{Fore.RED}[✗]{Style.RESET_ALL} {tool_name} error")
+            return False, str(e)
     
-    
-    status_dir = "status_codes"
-    if os.path.exists(status_dir):
-        print(f"{Fore.GREEN}[*] Status code files: {status_dir}/ directory{Style.RESET_ALL}")
+    def create_dirs(self):
+        print(f"\n{Fore.BLUE}[*]{Style.RESET_ALL} Creating directory structure...")
         
-       
+        dirs = [
+            "httpx",
+            "status_codes", 
+            "Cors_Misconfiguration",
+            "links_urls",
+            "js_analyst",
+            "API_Endpoints"
+        ]
+        
+        for dir_name in dirs:
+            dir_path = os.path.join(self.recon_dir, dir_name)
+            os.makedirs(dir_path, exist_ok=True)
+    
+    def get_target(self):
+        print(f"\n{Fore.YELLOW}[?]{Style.RESET_ALL} Enter target domain (e.g., target.com): ", end="")
+        self.target = input().strip()
+        
+        if not self.target:
+            print(f"{Fore.RED}[✗]{Style.RESET_ALL} Target domain is required")
+            sys.exit(1)
+        
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M")
+        self.recon_dir = f"recon_{self.target}_{timestamp}"
+        
+        print(f"\n{Fore.CYAN}[*]{Style.RESET_ALL} Target: {self.target}")
+        print(f"{Fore.CYAN}[*]{Style.RESET_ALL} Directory: {self.recon_dir}")
+    
+    def collect_subdomains(self):
+        print(f"\n{Fore.BLUE}[*]{Style.RESET_ALL} Collecting subdomains...")
+        
+        tools = [
+            (f"assetfinder --subs-only {self.target} > {self.recon_dir}/assetfinder.txt", "assetfinder"),
+            (f"subfinder -d {self.target} -all -recursive -silent > {self.recon_dir}/subfinder.txt", "subfinder"),
+            (f"samoscout -d {self.target} -silent > {self.recon_dir}/samoscout.txt", "samoscout"),
+            (f"curl -s 'https://crt.sh/?q=%25.{self.target}&output=json' | jq -r '.[].name_value' | sed 's/\\*\\.//g' | sort -u > {self.recon_dir}/crtsh.txt", "crt.sh")
+        ]
+        
+        all_subs = set()
+        
+        for cmd, tool_name in tools:
+            success, output = self.run_tool_with_progress(cmd, tool_name)
+            if success:
+                output_file = f"{self.recon_dir}/{tool_name}.txt"
+                if os.path.exists(output_file):
+                    with open(output_file, 'r') as f:
+                        lines = [line.strip() for line in f if line.strip()]
+                    all_subs.update(lines)
+                    print(f"   {Fore.GREEN}[✓]{Style.RESET_ALL} {tool_name}: {len(lines)}")
+            else:
+                print(f"   {Fore.YELLOW}[!]{Style.RESET_ALL} {tool_name}")
+        
+        all_subs_file = f"{self.recon_dir}/all_subs.txt"
+        with open(all_subs_file, 'w') as f:
+            f.write('\n'.join(sorted(all_subs)))
+        
+        for file in ["assetfinder.txt", "subfinder.txt", "samoscout.txt", "crtsh.txt"]:
+            file_path = os.path.join(self.recon_dir, file)
+            if os.path.exists(file_path):
+                os.remove(file_path)
+        
+        print(f"\n{Fore.GREEN}[✓]{Style.RESET_ALL} Total subdomains: {len(all_subs)}")
+        return len(all_subs)
+    
+    def run_httpx(self):
+        print(f"\n{Fore.BLUE}[*]{Style.RESET_ALL} Finding live hosts...")
+        
+        httpx_dir = os.path.join(self.recon_dir, "httpx")
+        subs_file = os.path.join(self.recon_dir, "all_subs.txt")
+        
+        if not os.path.exists(subs_file):
+            print(f"   {Fore.RED}[✗]{Style.RESET_ALL} No subdomains file")
+            return
+        
+        commands = [
+            (f"httpx -l {subs_file} -title -status-code -tech-detect -silent -o {httpx_dir}/live_subs.txt", "httpx_live"),
+            (f"httpx -l {subs_file} -title -status-code -tech-detect -json -silent -o {httpx_dir}/httpx_results.json", "httpx_json")
+        ]
+        
+        for cmd, tool_name in commands:
+            success, output = self.run_tool_with_progress(cmd, tool_name, show_cmd=False)
+            if success:
+                print(f"   {Fore.GREEN}[✓]{Style.RESET_ALL} {tool_name}")
+            else:
+                print(f"   {Fore.YELLOW}[!]{Style.RESET_ALL} {tool_name}")
+    
+    def categorize_status_codes(self):
+        print(f"\n{Fore.BLUE}[*]{Style.RESET_ALL} Categorizing by status codes...")
+        
+        httpx_file = os.path.join(self.recon_dir, "httpx", "httpx_results.json")
+        status_dir = os.path.join(self.recon_dir, "status_codes")
+        
+        if not os.path.exists(httpx_file):
+            print(f"   {Fore.YELLOW}[!]{Style.RESET_ALL} No httpx results")
+            return
+        
+        status_codes = {}
+        
+        with open(httpx_file, 'r') as f:
+            for line in f:
+                if line.strip():
+                    try:
+                        data = json.loads(line.strip())
+                        url = data.get('url', '')
+                        status = str(data.get('status_code', ''))
+                        
+                        if status not in status_codes:
+                            status_codes[status] = []
+                        status_codes[status].append(url)
+                    except:
+                        continue
+        
+        created_files = []
+        for code, urls in status_codes.items():
+            if urls:
+                file_name = f"sc{code}.txt"
+                file_path = os.path.join(status_dir, file_name)
+                with open(file_path, 'w') as f:
+                    f.write('\n'.join(urls))
+                created_files.append((file_name, len(urls)))
+        
+        interesting_codes = [code for code in status_codes.keys() if code not in ["200", "301", "302", "401", "403", "404"]]
+        interesting_urls = []
+        for code in interesting_codes:
+            interesting_urls.extend([f"{url} [{code}]" for url in status_codes[code]])
+        
+        if interesting_urls:
+            with open(os.path.join(status_dir, "interesting.txt"), 'w') as f:
+                f.write('\n'.join(interesting_urls))
+            created_files.append(("interesting.txt", len(interesting_urls)))
+        
+        for file_name, count in created_files:
+            print(f"   {Fore.GREEN}[✓]{Style.RESET_ALL} {file_name}: {count}")
+    
+    def run_cors_analysis(self):
+        print(f"\n{Fore.BLUE}[*]{Style.RESET_ALL} Checking CORS misconfigurations...")
+        
+        httpx_file = os.path.join(self.recon_dir, "httpx", "httpx_results.json")
+        cors_dir = os.path.join(self.recon_dir, "Cors_Misconfiguration")
+        
+        if not os.path.exists(httpx_file):
+            print(f"   {Fore.YELLOW}[!]{Style.RESET_ALL} No httpx results")
+            return
+        
+        corsy_path = os.path.join(self.tools_dir, "Corsy", "corsy.py")
+        if not os.path.exists(corsy_path):
+            print(f"   {Fore.YELLOW}[!]{Style.RESET_ALL} Corsy not found")
+            return
+        
+        urls_file = f"{cors_dir}/urls_for_cors.txt"
+        urls = []
+        
+        with open(httpx_file, 'r') as f:
+            for line in f:
+                if line.strip():
+                    try:
+                        data = json.loads(line.strip())
+                        url = data.get('url', '')
+                        if url:
+                            urls.append(url)
+                    except:
+                        continue
+        
+        if not urls:
+            print(f"   {Fore.YELLOW}[!]{Style.RESET_ALL} No URLs for CORS check")
+            return
+        
+        with open(urls_file, 'w') as f:
+            f.write('\n'.join(urls))
+        
+        cors_cmd = f"python3 {corsy_path} -i {urls_file} -o {cors_dir}/Cors_Results.txt"
+        success, output = self.run_tool_with_progress(cors_cmd, "corsy", show_cmd=False)
+        
+        if success:
+            if os.path.exists(f"{cors_dir}/Cors_Results.txt"):
+                with open(f"{cors_dir}/Cors_Results.txt", 'r') as f:
+                    content = f.read().strip()
+                    if content:
+                        print(f"   {Fore.GREEN}[✓]{Style.RESET_ALL} CORS analysis completed")
+                    else:
+                        print(f"   {Fore.CYAN}[✓]{Style.RESET_ALL} No CORS misconfigurations")
+    
+    def collect_urls(self):
+        print(f"\n{Fore.BLUE}[*]{Style.RESET_ALL} Discovering URLs...")
+        
+        status_dir = os.path.join(self.recon_dir, "status_codes")
+        links_dir = os.path.join(self.recon_dir, "links_urls")
+        
         status_files = []
-        for status_code in [200, 301, 302, 401, 403, 404]:
-            filename = f"sc{status_code}.txt"
-            filepath = os.path.join(status_dir, filename)
-            if os.path.exists(filepath):
-                with open(filepath, 'r') as f:
-                    line_count = len(f.readlines())
-                status_files.append((filename, line_count))
+        for code in ["200", "401", "403"]:
+            file_path = os.path.join(status_dir, f"sc{code}.txt")
+            if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
+                status_files.append(file_path)
         
-        interesting_path = os.path.join(status_dir, "interestingsc.txt")
-        if os.path.exists(interesting_path):
-            with open(interesting_path, 'r') as f:
-                interesting_count = len(f.readlines())
-            status_files.append(("interestingsc.txt", interesting_count))
+        if not status_files:
+            print(f"   {Fore.YELLOW}[!]{Style.RESET_ALL} No URLs to process")
+            return
         
-        if status_files:
-            print(f"\n{Fore.CYAN}[*] Status Code Files in '{status_dir}/':{Style.RESET_ALL}")
-            for filename, count in status_files:
-                print(f"  {Fore.GREEN}›{Style.RESET_ALL} {filename:20}: {count:4} entries")
-
-def print_footer():
-    footer = f"""
-{Fore.CYAN}
-╔══════════════════════════════════════════════════════════════════════╗
-║                                                                      ║
-   {Fore.WHITE}Created by: La'Rhen - Advanced Recon Tool{Fore.CYAN}    
-║                                                                      ║
-╚══════════════════════════════════════════════════════════════════════╝
-{Style.RESET_ALL}
-"""
-    print(footer)
+        temp_urls_file = f"{links_dir}/temp_urls.txt"
+        all_urls = set()
+        
+        with open(temp_urls_file, 'w') as outfile:
+            for file_path in status_files:
+                with open(file_path, 'r') as infile:
+                    content = infile.read()
+                    outfile.write(content)
+                    all_urls.update([line.strip() for line in content.split('\n') if line.strip()])
+        
+        if not all_urls:
+            os.remove(temp_urls_file)
+            print(f"   {Fore.YELLOW}[!]{Style.RESET_ALL} No valid URLs")
+            return
+        
+        tools = [
+            (f"katana -list {temp_urls_file} -silent > {links_dir}/katana.txt", "katana"),
+            (f"cat {temp_urls_file} | gau --threads 5 --subs > {links_dir}/gau.txt", "gau"),
+            (f"cat {temp_urls_file} | waybackurls > {links_dir}/waybackurls.txt", "waybackurls"),
+            (f"cat {temp_urls_file} | hakrawler -subs -depth 2 -plain > {links_dir}/hakrawler.txt", "hakrawler")
+        ]
+        
+        discovered_urls = set()
+        
+        for cmd, tool_name in tools:
+            success, output = self.run_tool_with_progress(cmd, tool_name, show_cmd=False)
+            if success:
+                output_file = f"{links_dir}/{tool_name}.txt"
+                if os.path.exists(output_file):
+                    with open(output_file, 'r') as f:
+                        lines = [line.strip() for line in f if line.strip()]
+                    discovered_urls.update(lines)
+                print(f"   {Fore.GREEN}[✓]{Style.RESET_ALL} {tool_name}")
+        
+        all_discovered_file = f"{links_dir}/all_urls.txt"
+        with open(all_discovered_file, 'w') as f:
+            f.write('\n'.join(sorted(discovered_urls)))
+        
+        for file in ["temp_urls.txt", "katana.txt", "gau.txt", "waybackurls.txt", "hakrawler.txt"]:
+            file_path = os.path.join(links_dir, file)
+            if os.path.exists(file_path):
+                os.remove(file_path)
+        
+        print(f"   {Fore.GREEN}[✓]{Style.RESET_ALL} Total URLs: {len(discovered_urls)}")
+    
+    def analyze_js(self):
+        print(f"\n{Fore.BLUE}[*]{Style.RESET_ALL} Analyzing JavaScript files...")
+        
+        links_dir = os.path.join(self.recon_dir, "links_urls")
+        js_dir = os.path.join(self.recon_dir, "js_analyst")
+        
+        urls_file = os.path.join(links_dir, "all_urls.txt")
+        
+        if not os.path.exists(urls_file):
+            print(f"   {Fore.YELLOW}[!]{Style.RESET_ALL} No URLs file found")
+            return
+        
+        js_files = []
+        with open(urls_file, 'r') as f:
+            for line in f:
+                url = line.strip()
+                if '.js' in url.lower():
+                    js_files.append(url)
+        
+        if not js_files:
+            print(f"   {Fore.CYAN}[✓]{Style.RESET_ALL} No JavaScript files found")
+            return
+        
+        js_files_path = os.path.join(js_dir, "js_files.txt")
+        with open(js_files_path, 'w') as f:
+            f.write('\n'.join(js_files))
+        
+        print(f"   {Fore.GREEN}[✓]{Style.RESET_ALL} JS files: {len(js_files)}")
+        
+        tools = [
+            (f"cat {js_files_path} | mantra -silent > {js_dir}/mantra_results.txt", "mantra")
+        ]
+        
+        linkfinder_path = os.path.expanduser("~/Larhen_Tools/LinkFinder/linkfinder.py")
+        if os.path.exists(linkfinder_path):
+            tools.append((f"cat {js_files_path} | xargs -I % python3 {linkfinder_path} -i % -o cli 2>/dev/null > {js_dir}/linkfinder_results.txt", 
+                         "linkfinder"))
+        
+        secretfinder_path = os.path.expanduser("~/Larhen_Tools/SecretFinder/secretfinder.py")
+        if os.path.exists(secretfinder_path):
+            tools.append((f"cat {js_files_path} | xargs -I % python3 {secretfinder_path} -i % -o cli 2>/dev/null > {js_dir}/secretfinder_results.txt", 
+                         "secretfinder"))
+        
+        for cmd, tool_name in tools:
+            success, output = self.run_tool_with_progress(cmd, tool_name, show_cmd=False)
+            if success:
+                print(f"   {Fore.GREEN}[✓]{Style.RESET_ALL} {tool_name}")
+    
+    def extract_api_urls(self):
+        print(f"\n{Fore.BLUE}[*]{Style.RESET_ALL} Extracting API URLs...")
+        
+        httpx_file = os.path.join(self.recon_dir, "httpx", "httpx_results.json")
+        api_dir = os.path.join(self.recon_dir, "API_Endpoints")
+        
+        if not os.path.exists(httpx_file):
+            print(f"   {Fore.YELLOW}[!]{Style.RESET_ALL} No httpx results")
+            return []
+        
+        api_keywords = ["api", "v1", "v2", "v3", "rest", "graphql", "json", "xml", "soap", "endpoint", "swagger", "openapi"]
+        
+        api_urls = set()
+        
+        with open(httpx_file, 'r') as f:
+            for line in f:
+                if line.strip():
+                    try:
+                        data = json.loads(line.strip())
+                        url = data.get('url', '')
+                        if url:
+                            url_lower = url.lower()
+                            for keyword in api_keywords:
+                                if keyword in url_lower:
+                                    if ':' in url and '[' not in url and url.count(':') > 1:
+                                        continue
+                                    api_urls.add(url)
+                                    break
+                    except:
+                        continue
+        
+        try:
+            jq_cmd = f"jq -r '.url' {httpx_file} 2>/dev/null"
+            result = subprocess.run(jq_cmd, shell=True, capture_output=True, text=True)
+            if result.returncode == 0:
+                urls_from_jq = [url.strip() for url in result.stdout.split('\n') if url.strip()]
+                for url in urls_from_jq:
+                    url_lower = url.lower()
+                    for keyword in api_keywords:
+                        if keyword in url_lower:
+                            if ':' in url and '[' not in url and url.count(':') > 1:
+                                continue
+                            api_urls.add(url)
+                            break
+        except:
+            pass
+        
+        if api_urls:
+            api_urls_file = os.path.join(api_dir, "api_urls.txt")
+            with open(api_urls_file, 'w') as f:
+                f.write('\n'.join(sorted(api_urls)))
+            
+            print(f"   {Fore.GREEN}[✓]{Style.RESET_ALL} API URLs found: {len(api_urls)}")
+            
+            print(f"   {Fore.CYAN}[*]{Style.RESET_ALL} Sample API URLs:")
+            for i, url in enumerate(list(api_urls)[:5]):
+                print(f"   {Fore.CYAN}    {i+1}. {url}{Style.RESET_ALL}")
+            if len(api_urls) > 5:
+                print(f"   {Fore.CYAN}    ... and {len(api_urls)-5} more{Style.RESET_ALL}")
+            
+            return list(api_urls)
+        else:
+            print(f"   {Fore.CYAN}[✓]{Style.RESET_ALL} No API URLs found")
+            return []
+    
+    def run_arjun(self, api_urls):
+        print(f"\n{Fore.BLUE}[*]{Style.RESET_ALL} Running Arjun for parameter discovery...")
+        
+        api_dir = os.path.join(self.recon_dir, "API_Endpoints")
+        
+        if not api_urls:
+            print(f"   {Fore.YELLOW}[!]{Style.RESET_ALL} No API URLs for Arjun")
+            return
+        
+        cleaned_urls = []
+        for url in api_urls:
+            try:
+                from urllib.parse import urlparse
+                parsed = urlparse(url)
+                if parsed.netloc and ':' in parsed.netloc and '[' not in parsed.netloc:
+                    continue
+                if parsed.scheme in ('http', 'https') and parsed.netloc:
+                    cleaned_urls.append(url)
+            except:
+                continue
+        
+        if not cleaned_urls:
+            print(f"   {Fore.YELLOW}[!]{Style.RESET_ALL} No valid URLs after cleaning")
+            return
+        
+        urls_to_scan = cleaned_urls[:10]
+        
+        arjun_input_file = os.path.join(api_dir, "arjun_input.txt")
+        with open(arjun_input_file, 'w') as f:
+            f.write('\n'.join(urls_to_scan))
+        
+        print(f"   {Fore.CYAN}[*]{Style.RESET_ALL} URLs for Arjun scan: {len(urls_to_scan)}")
+        
+        arjun_cmd = f"arjun -i {arjun_input_file} -oT {api_dir}/arjun_results.txt"
+        
+        print(f"\n{Fore.YELLOW}╔══════════════════[Arjun]══════════════════╗{Style.RESET_ALL}")
+        print(f"{Fore.WHITE}{arjun_cmd}{Style.RESET_ALL}")
+        
+        success, output = self.run_tool_with_progress(arjun_cmd, "arjun", show_cmd=False)
+        
+        if success:
+            results_file = os.path.join(api_dir, "arjun_results.txt")
+            if os.path.exists(results_file) and os.path.getsize(results_file) > 0:
+                with open(results_file, 'r') as f:
+                    lines = f.readlines()
+                    if lines:
+                        print(f"   {Fore.GREEN}[✓]{Style.RESET_ALL} Arjun found parameters: {len(lines)} parameters")
+                        
+                        print(f"   {Fore.CYAN}[*]{Style.RESET_ALL} Sample parameters found:")
+                        for i, line in enumerate(lines[:5]):
+                            line = line.strip()
+                            if line:
+                                print(f"   {Fore.CYAN}    {i+1}. {line}{Style.RESET_ALL}")
+                        if len(lines) > 5:
+                            print(f"   {Fore.CYAN}    ... and {len(lines)-5} more{Style.RESET_ALL}")
+                    else:
+                        print(f"   {Fore.CYAN}[✓]{Style.RESET_ALL} No parameters found by Arjun")
+            else:
+                print(f"   {Fore.CYAN}[✓]{Style.RESET_ALL} No results from Arjun")
+        else:
+            print(f"   {Fore.YELLOW}[!]{Style.RESET_ALL} Arjun execution had issues")
+            if output:
+                error_lines = output.split('\n')
+                for line in error_lines[:3]:
+                    if line.strip():
+                        print(f"   {Fore.RED}    {line}{Style.RESET_ALL}")
+    
+    def run_kiterunner(self):
+        print(f"\n{Fore.BLUE}[*]{Style.RESET_ALL} Running Kiterunner for API endpoint discovery...")
+        
+        api_dir = os.path.join(self.recon_dir, "API_Endpoints")
+        
+        wordlists = [
+            ("routes-large.kite", "routes"),
+            ("routes-small.kite", "swagger")
+        ]
+        
+        live_subs_file = os.path.join(self.recon_dir, "httpx", "live_subs.txt")
+        
+        if not os.path.exists(live_subs_file):
+            print(f"   {Fore.YELLOW}[!]{Style.RESET_ALL} No live subdomains file")
+            return
+        
+        domains = set()
+        with open(live_subs_file, 'r') as f:
+            for line in f:
+                url = line.strip()
+                if url:
+                    try:
+                        from urllib.parse import urlparse
+                        parsed = urlparse(url)
+                        if parsed.netloc:
+                            domain = parsed.netloc
+                            if ':' in domain and '[' not in domain:
+                                continue
+                            if '.' in domain and not domain.startswith(('.', '-', '_')):
+                                domain = domain.split(':')[0]
+                                domains.add(domain)
+                    except Exception:
+                        continue
+        
+        if not domains:
+            print(f"   {Fore.YELLOW}[!]{Style.RESET_ALL} No valid domains found")
+            return
+        
+        domains_file = os.path.join(api_dir, "kiterunner_domains.txt")
+        with open(domains_file, 'w') as f:
+            f.write('\n'.join(sorted(domains)))
+        
+        print(f"   {Fore.CYAN}[*]{Style.RESET_ALL} Valid domains for Kiterunner: {len(domains)}")
+        
+        if len(domains) <= 10:
+            for domain in sorted(domains):
+                print(f"   {Fore.CYAN}  - {domain}{Style.RESET_ALL}")
+        
+        for wordlist_name, wordlist_type in wordlists:
+            wordlist_path = None
+            
+            if os.path.exists(wordlist_name):
+                wordlist_path = wordlist_name
+            elif os.path.exists(os.path.join(self.user_home, "Larhen_Tools", "wordlists", wordlist_name)):
+                wordlist_path = os.path.join(self.user_home, "Larhen_Tools", "wordlists", wordlist_name)
+            elif os.path.exists(os.path.expanduser(f"~/{wordlist_name}")):
+                wordlist_path = os.path.expanduser(f"~/{wordlist_name}")
+            
+            if wordlist_path and os.path.exists(wordlist_path):
+                wordlist_size = os.path.getsize(wordlist_path)
+                if wordlist_size == 0:
+                    print(f"   {Fore.YELLOW}[!]{Style.RESET_ALL} {wordlist_type} wordlist is empty: {wordlist_path}")
+                    continue
+                
+                print(f"\n   {Fore.CYAN}[*]{Style.RESET_ALL} Using {wordlist_type} wordlist: {wordlist_path}")
+                print(f"   {Fore.CYAN}[*]{Style.RESET_ALL} Wordlist size: {wordlist_size:,} bytes")
+                
+                kr_output_file = os.path.join(api_dir, f"kiterunner_{wordlist_type}_results.txt")
+                
+                kr_cmd = f"kr scan {domains_file} -w {wordlist_path} -x 10 -j 50 -o {kr_output_file}"
+                
+                print(f"\n{Fore.YELLOW}╔══════════════════[kiterunner-{wordlist_type}]══════════════════╗{Style.RESET_ALL}")
+                print(f"{Fore.WHITE}{kr_cmd}{Style.RESET_ALL}")
+                
+                success, output = self.run_tool_with_progress(kr_cmd, f"kiterunner-{wordlist_type}", show_cmd=False)
+                
+                if success:
+                    if os.path.exists(kr_output_file) and os.path.getsize(kr_output_file) > 0:
+                        with open(kr_output_file, 'r') as f:
+                            lines = f.readlines()
+                            result_count = len(lines)
+                        print(f"   {Fore.GREEN}[✓]{Style.RESET_ALL} {wordlist_type.capitalize()} scan completed: {result_count} results")
+                        
+                        if result_count > 0:
+                            print(f"   {Fore.CYAN}[*]{Style.RESET_ALL} Sample results:")
+                            for i, line in enumerate(lines[:3]):
+                                print(f"   {Fore.CYAN}    {i+1}. {line.strip()}{Style.RESET_ALL}")
+                            if result_count > 3:
+                                print(f"   {Fore.CYAN}    ... and {result_count-3} more{Style.RESET_ALL}")
+                    else:
+                        print(f"   {Fore.CYAN}[✓]{Style.RESET_ALL} {wordlist_type.capitalize()} scan completed - no results found")
+                else:
+                    print(f"   {Fore.YELLOW}[!]{Style.RESET_ALL} Kiterunner {wordlist_type} scan had issues")
+                    if output:
+                        error_lines = output.split('\n')
+                        for line in error_lines[:5]:
+                            if line.strip():
+                                print(f"   {Fore.RED}    {line}{Style.RESET_ALL}")
+            else:
+                print(f"   {Fore.YELLOW}[!]{Style.RESET_ALL} {wordlist_type} wordlist not found: {wordlist_name}")
+                print(f"   {Fore.YELLOW}[!]{Style.RESET_ALL} Please ensure wordlists are installed in ~/Larhen_Tools/wordlists/")
+    
+    def run_api_enumeration(self):
+        print(f"\n{Fore.BLUE}[*]{Style.RESET_ALL} Starting API endpoint enumeration...")
+        
+        api_urls = self.extract_api_urls()
+        
+        if api_urls:
+            self.run_arjun(api_urls)
+            self.run_kiterunner()
+            print(f"\n{Fore.GREEN}[✓]{Style.RESET_ALL} API enumeration completed")
+        else:
+            print(f"   {Fore.CYAN}[✓]{Style.RESET_ALL} No API URLs to enumerate")
+    
+    def show_summary(self):
+        print(f"\n{Fore.GREEN}╔══════════════════════════════════════════════╗")
+        print(f"║              RECON COMPLETED               ║")
+        print(f"╚══════════════════════════════════════════════╝{Style.RESET_ALL}")
+        
+        print(f"\n{Fore.CYAN}[*]{Style.RESET_ALL} Results Directory: {self.recon_dir}")
+        
+        print(f"\n{Fore.CYAN}[*]{Style.RESET_ALL} Contents:")
+        for root, dirs, files in os.walk(self.recon_dir):
+            level = root.replace(self.recon_dir, '').count(os.sep)
+            if level == 0:
+                for dir_name in sorted(dirs):
+                    dir_path = os.path.join(root, dir_name)
+                    file_count = len([f for f in os.listdir(dir_path) if os.path.isfile(os.path.join(dir_path, f))])
+                    if file_count > 0:
+                        print(f"  {Fore.YELLOW}›{Style.RESET_ALL} {dir_name}/ ({file_count} files)")
+        
+        print(f"\n{Fore.GREEN}[✓]{Style.RESET_ALL} Reconnaissance completed!")
+    
+    def run(self):
+        try:
+            self.clear_screen()
+            self.print_banner()
+            self.get_target()
+            self.create_dirs()
+            self.collect_subdomains()
+            self.run_httpx()
+            self.categorize_status_codes()
+            self.run_cors_analysis()
+            self.collect_urls()
+            self.analyze_js()
+            self.run_api_enumeration()
+            self.show_summary()
+            
+        except KeyboardInterrupt:
+            print(f"\n\n{Fore.YELLOW}[!]{Style.RESET_ALL} Process interrupted by user")
+            sys.exit(0)
+        except Exception as e:
+            print(f"\n{Fore.RED}[✗]{Style.RESET_ALL} Error: {str(e)}")
+            sys.exit(1)
 
 if __name__ == "__main__":
-    try:
-        main()
-        print_footer()
-    except KeyboardInterrupt:
-        print(f"\n\n{Fore.RED}[!] Stopped by user{Style.RESET_ALL}")
-        sys.exit(0)
-    except Exception as e:
-        print(f"\n\n{Fore.RED}[!] Critical Error: {e}{Style.RESET_ALL}")
-        import traceback
-        traceback.print_exc()
-        sys.exit(1)
+    tool = Larhenum()
+    tool.run()
