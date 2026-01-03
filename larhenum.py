@@ -333,8 +333,8 @@ class Larhenum:
             return
         
         tools = [
-            (f"katana -list {temp_urls_file} -silent > {links_dir}/katana.txt", "katana"),
-            (f"cat {temp_urls_file} | gau --threads 5 --subs > {links_dir}/gau.txt", "gau"),
+            (f"katana -list {temp_urls_file} -jc -silent > {links_dir}/katana.txt", "katana"),
+            (f"cat {temp_urls_file} | gau --threads 50 --subs > {links_dir}/gau.txt", "gau"),
             (f"cat {temp_urls_file} | waybackurls > {links_dir}/waybackurls.txt", "waybackurls"),
             (f"cat {temp_urls_file} | hakrawler -subs -depth 2 -plain > {links_dir}/hakrawler.txt", "hakrawler")
         ]
