@@ -51,6 +51,60 @@ print_warning() {
     echo -e "${YELLOW}[!]${NC} $1"
 }
 
+install_go() {
+    print_step "Installing Go via apt..."
+    
+    if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        if command -v apt &> /dev/null; then
+            sudo apt update
+            sudo apt install -y golang-go
+            
+            if command -v go &> /dev/null; then
+                go_version=$(go version | awk '{print $3}')
+                print_success "Go installed: $go_version"
+                
+                echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
+                echo 'export GOPATH=$HOME/go' >> ~/.bashrc
+                echo 'export PATH=$PATH:$GOPATH/bin' >> ~/.bashrc
+                
+                if [ -f ~/.zshrc ]; then
+                    echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.zshrc
+                    echo 'export GOPATH=$HOME/go' >> ~/.zshrc
+                    echo 'export PATH=$PATH:$GOPATH/bin' >> ~/.zshrc
+                fi
+                
+                export PATH=$PATH:/usr/local/go/bin
+                export GOPATH=$HOME/go
+                export PATH=$PATH:$GOPATH/bin
+                
+                return 0
+            else
+                print_error "Go installation failed via apt"
+                return 1
+            fi
+        else
+            print_error "APT package manager not found"
+            return 1
+        fi
+    elif [[ "$OSTYPE" == "darwin"* ]]; then
+        if command -v brew &> /dev/null; then
+            brew install go
+            if command -v go &> /dev/null; then
+                print_success "Go installed via Homebrew"
+                return 0
+            fi
+        fi
+        
+        print_error "Please install Go manually on macOS:"
+        print_error "1. Download from: https://go.dev/dl/"
+        print_error "2. Or install via Homebrew: brew install go"
+        return 1
+    else
+        print_error "Unsupported OS. Please install Go manually."
+        return 1
+    fi
+}
+
 check_go() {
     print_step "Checking Go installation..."
     if command -v go &> /dev/null; then
@@ -72,8 +126,16 @@ check_go() {
         fi
         return 0
     else
-        print_error "Go is not installed"
-        return 1
+        print_warning "Go is not installed"
+        print_step "Attempting to install Go..."
+        if install_go; then
+            print_success "Go installed successfully"
+            return 0
+        else
+            print_error "Failed to install Go"
+            print_error "Please install Go manually: sudo apt install golang-go"
+            return 1
+        fi
     fi
 }
 
@@ -84,7 +146,31 @@ check_python() {
         print_success "Python3 is installed: $python_version"
         return 0
     else
-        print_error "Python3 is not installed"
+        print_warning "Python3 is not installed"
+        
+        if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+            if command -v apt &> /dev/null; then
+                print_step "Installing Python3 via apt..."
+                sudo apt update
+                sudo apt install -y python3 python3-pip
+                if command -v python3 &> /dev/null; then
+                    print_success "Python3 installed via apt"
+                    return 0
+                fi
+            fi
+        elif [[ "$OSTYPE" == "darwin"* ]]; then
+            if command -v brew &> /dev/null; then
+                print_step "Installing Python3 via Homebrew..."
+                brew install python3
+                if command -v python3 &> /dev/null; then
+                    print_success "Python3 installed via Homebrew"
+                    return 0
+                fi
+            fi
+        fi
+        
+        print_error "Failed to install Python3 automatically"
+        print_error "Please install Python3 manually: sudo apt install python3 python3-pip"
         return 1
     fi
 }
@@ -411,7 +497,6 @@ show_usage() {
     echo "## ./install.sh"
     echo "##  Finish"
     echo "## deactivate"
-    
 }
 
 main() {
@@ -421,8 +506,13 @@ main() {
     echo "════════════════════════════════════════════"
     echo
     
-    check_go || exit 1
-    check_python || exit 1
+    if ! check_go; then
+        exit 1
+    fi
+    
+    if ! check_python; then
+        exit 1
+    fi
     
     install_system_deps
     install_go_tools
